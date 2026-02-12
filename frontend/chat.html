@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outreach Engine - Generate Cold Outreach Messages</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Chat Header -->
+        <div class="chat-header">
+            <div class="container">
+                <h1>🚀 Cold Outreach Engine</h1>
+                <p>Powered by BitNet • 100% Offline • Privacy-First</p>
+            </div>
+        </div>
+
+        <!-- Chat Content -->
+        <div class="chat-content" id="chatMessages">
+            <div class="message ai">
+                <div class="message-avatar ai">🤖</div>
+                <div class="message-bubble">
+                    <strong>Welcome to the Cold Outreach Engine!</strong><br><br>
+                    I'm your AI assistant powered by BitNet (running 100% offline). I'll help you generate highly personalized cold outreach messages.<br><br>
+                    <strong>Here's what I can do:</strong><br>
+                    • Analyze social media profiles<br>
+                    • Generate personalized messages for multiple channels<br>
+                    • Match tone to your recipient's style<br>
+                    • Estimate reply likelihood<br>
+                    • Store profiles for future reference<br><br>
+                    <strong>Let's get started!</strong> Please enter a social media profile URL or provide information about your target.
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Footer -->
+        <div class="chat-footer">
+            <div class="container">
+                <div class="input-group">
+                    <input 
+                        type="text" 
+                        class="chat-input" 
+                        id="userInput"
+                        placeholder="Enter LinkedIn URL, Twitter handle, or describe your target... (e.g., 'john_linkedin_profile')"
+                        onkeypress="handleKeyPress(event)"
+                    >
+                    <button class="btn btn-primary send-btn" onclick="sendMessage()">Send</button>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                    💡 Tip: Try "john_linkedin_profile", "sarah_startup", or "alex_engineer" for demo profiles
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for displaying full messages -->
+    <div id="messageModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; padding: 2rem;">
+        <div style="background: white; border-radius: 0.75rem; max-width: 800px; margin: auto; max-height: 90vh; overflow-y: auto; padding: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2 id="modalTitle"></h2>
+                <button onclick="closeModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">✕</button>
+            </div>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script src="/static/chat.js"></script>
+</body>
+</html>
