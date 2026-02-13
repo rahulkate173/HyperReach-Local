@@ -132,7 +132,7 @@ class HealthResponse(BaseModel):
     """Health check response"""
     status: str
     version: str
-    model_loaded: bool
+    is_model_loaded: bool
     device: str
     uptime_seconds: Optional[float] = None
 

@@ -23,9 +23,9 @@ class Settings(BaseSettings):
     WORKERS: int = 1
 
     # Model Configuration
-    MODEL_NAME: str = "hugging-quants/BitNet-b1.58-3B"  # BitNet model from Hugging Face
+    MODEL_NAME: str = "microsoft/bitnet-b1.58-2B-4T"  
     DEVICE: str = "cpu"  # Change to 'cuda' if you have GPU support
-    MAX_TOKENS: int = 512
+    MAX_TOKENS: int = 2048
     TEMPERATURE: float = 0.7
     TOP_P: float = 0.9
 

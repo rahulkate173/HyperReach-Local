@@ -1,7 +1,7 @@
 [project]
 name = "cold-outreach-engine"
 version = "1.0.0"
-description = "Offline LLM-Powered Hyper-Personalized Cold Outreach Engine using BitNet"
+description = "Offline LLM-Powered Hyper-Personalized Cold Outreach Engine using "
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 authors = [

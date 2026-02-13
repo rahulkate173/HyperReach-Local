@@ -103,7 +103,7 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         version=settings.APP_VERSION,
-        model_loaded=llm.is_loaded(),
+        is_model_loaded=llm.is_loaded(),
         device=settings.DEVICE,
         uptime_seconds=uptime,
     )
@@ -262,7 +262,7 @@ async def get_statistics():
 
         return {
             **stats,
-            "model_loaded": llm.is_loaded(),
+            "is_model_loaded": llm.is_loaded(),
             "model_name": settings.MODEL_NAME,
             "device": settings.DEVICE,
         }
