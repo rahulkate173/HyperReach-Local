@@ -399,11 +399,27 @@ def _extract_profile_data(url: str, platform: SocialMediaPlatform) -> dict:
 
 # ==================== STATIC FILES ====================
 
-
-# Mount frontend static files if they exist
 frontend_path = settings.BASE_DIR / "frontend"
+
 if frontend_path.exists():
     app.mount("/static", StaticFiles(directory=str(frontend_path)), name="static")
+    logger.info(f"Mounted /static from {frontend_path}")
+
+
+@app.get("/")
+async def root():
+    index_path = frontend_path / "index.html"
+    if index_path.exists():
+        return FileResponse(index_path, media_type="text/html")
+    return {"message": "Cold Outreach Engine API running", "docs": "/docs"}
+
+
+@app.get("/chat")
+async def chat_page():
+    chat_path = frontend_path / "chat.html"
+    if chat_path.exists():
+        return FileResponse(chat_path, media_type="text/html")
+    raise HTTPException(status_code=404, detail="Chat interface not found")
 
 
 @app.get("/assets/{path:path}")
