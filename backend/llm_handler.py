@@ -1,5 +1,5 @@
 """
-LLM Handler for BitNet integration
+LLM Handler for TinyLlama integration
 Manages offline LLM inference for message generation
 """
 import logging
@@ -7,20 +7,25 @@ from typing import Optional
 from pathlib import Path
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
+import warnings
 
 from backend.config import settings
 
 logger = logging.getLogger(__name__)
 
+# Suppress deprecation warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 
-class BitNetHandler:
-    """Handler for BitNet LLM model operations"""
+
+class LLMHandler:
+    """Handler for LLM model operations"""
 
     def __init__(self):
         self.model = None
         self.tokenizer = None
         self.device = settings.DEVICE
         self.model_name = settings.MODEL_NAME
+        self.fallback_model = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
         self._ensure_model_cached()
 
     def _ensure_model_cached(self):
@@ -29,46 +34,57 @@ class BitNetHandler:
         logger.info(f"Cache directory: {cache_dir}")
 
     def load_model(self) -> bool:
-        """Load BitNet model and tokenizer"""
+        """Load LLM model and tokenizer"""
         try:
-            logger.info(f"Loading BitNet model: {self.model_name}")
+            logger.info(f"Loading model: {self.model_name}")
             logger.info(f"Using device: {self.device}")
 
-            # Download and load tokenizer
             logger.info("Loading tokenizer...")
             self.tokenizer = AutoTokenizer.from_pretrained(
                 self.model_name,
                 cache_dir=str(settings.CACHE_DIR),
                 trust_remote_code=True,
-                device_map=self.device,
             )
 
-            # Download and load model
             logger.info("Loading model...")
-            if self.device == "cuda" and torch.cuda.is_available():
-                self.model = AutoModelForCausalLM.from_pretrained(
-                    self.model_name,
-                    cache_dir=str(settings.CACHE_DIR),
-                    trust_remote_code=True,
-                    torch_dtype=torch.float16,
-                    device_map="auto",
-                )
-                logger.info("✓ Model loaded on GPU")
-            else:
-                self.model = AutoModelForCausalLM.from_pretrained(
-                    self.model_name,
-                    cache_dir=str(settings.CACHE_DIR),
-                    trust_remote_code=True,
-                    device_map="cpu",
-                )
-                logger.info("✓ Model loaded on CPU")
+            self.model = AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                cache_dir=str(settings.CACHE_DIR),
+                trust_remote_code=True,
+                low_cpu_mem_usage=True,
+            )
 
+            logger.info("✓ Model loaded successfully on CPU")
             logger.info("✓ Model and tokenizer loaded successfully")
             return True
 
         except Exception as e:
-            logger.error(f"Error loading model: {e}")
-            return False
+            logger.error(f"Error loading model {self.model_name}: {e}")
+            logger.info(f"Attempting to load fallback model: {self.fallback_model}")
+            
+            try:
+                self.model_name = self.fallback_model
+                logger.info(f"Loading fallback model: {self.model_name}")
+                
+                self.tokenizer = AutoTokenizer.from_pretrained(
+                    self.model_name,
+                    cache_dir=str(settings.CACHE_DIR),
+                    trust_remote_code=True,
+                )
+
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    self.model_name,
+                    cache_dir=str(settings.CACHE_DIR),
+                    trust_remote_code=True,
+                    low_cpu_mem_usage=True,
+                )
+                
+                logger.info("✓ Fallback model loaded successfully")
+                return True
+                
+            except Exception as fallback_error:
+                logger.error(f"Failed to load fallback model: {fallback_error}")
+                return False
 
     def is_loaded(self) -> bool:
         """Check if model is loaded"""
@@ -81,17 +97,15 @@ class BitNetHandler:
         temperature: float = 0.7,
         top_p: float = 0.9,
     ) -> str:
-        """Generate text using BitNet model"""
+        """Generate text using LLM model"""
         if not self.is_loaded():
             raise RuntimeError("Model not loaded. Call load_model() first.")
 
         try:
             max_tokens = max_tokens or settings.MAX_TOKENS
 
-            # Tokenize input
             inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
 
-            # Generate with low memory options
             with torch.no_grad():
                 outputs = self.model.generate(
                     inputs["input_ids"],
@@ -103,12 +117,10 @@ class BitNetHandler:
                     num_return_sequences=1,
                 )
 
-            # Decode output
             generated_text = self.tokenizer.decode(
                 outputs[0], skip_special_tokens=True
             )
 
-            # Remove prompt from generated text
             result = generated_text[len(prompt) :].strip()
             return result
 
@@ -148,15 +160,14 @@ class BitNetHandler:
         logger.info("Model unloaded and memory cleared")
 
 
-# Global LLM handler instance
-_llm_handler: Optional[BitNetHandler] = None
+_llm_handler: Optional[LLMHandler] = None
 
 
-def get_llm_handler() -> BitNetHandler:
+def get_llm_handler() -> LLMHandler:
     """Get or create LLM handler singleton"""
     global _llm_handler
     if _llm_handler is None:
-        _llm_handler = BitNetHandler()
+        _llm_handler = LLMHandler()
     return _llm_handler
 
 

@@ -295,92 +295,107 @@ async def export_profiles(format: str = "json"):
 
 # ==================== UTILITY FUNCTIONS ====================
 
-
+def _extract_linkedin_profile(url: str) -> dict:
+    """Extract real LinkedIn profile data"""
+    try:
+        from bs4 import BeautifulSoup
+        import requests
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        
+        logger.info(f"Scraping LinkedIn profile: {url}")
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Extract name
+        name_elem = soup.find('h1', class_='text-heading-xlarge')
+        name = name_elem.text.strip() if name_elem else "Professional"
+        
+        # Extract headline/role
+        headline_elem = soup.find('div', class_='text-body-medium')
+        headline = headline_elem.text.strip() if headline_elem else "Professional"
+        
+        # Extract about
+        about_elem = soup.find('div', class_='show-more-less-text')
+        about = about_elem.text.strip() if about_elem else ""
+        
+        return {
+            "name": name,
+            "role": headline,
+            "company": headline.split(" at ")[-1] if " at " in headline else "",
+            "about": about,
+            "bio": headline,
+            "profile_url": url,
+            "skills": [],
+            "interests": [],
+            "education": "",
+            "industry": "Technology",
+            "location": "",
+            "email": "",
+            "years_experience": 5,
+            "language": "english",
+        }
+    except Exception as e:
+        logger.error(f"Error scraping LinkedIn: {e}")
+        return {"error":404}
+    
+def _extract_github_profile(url: str) -> dict:
+    """Extract real GitHub profile data using API"""
+    try:
+        import requests
+        import re
+        
+        match = re.search(r'github\.com/([a-zA-Z0-9\-]+)', url)
+        if not match:
+            return _get_demo_profile()
+        
+        username = match.group(1)
+        api_url = f"https://api.github.com/users/{username}"
+        response = requests.get(api_url, timeout=10)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        return {
+            "name": data.get('name', username),
+            "role": data.get('bio', 'Developer'),
+            "company": data.get('company', ''),
+            "about": "",
+            "bio": data.get('bio', ''),
+            "profile_url": url,
+            "skills": ["Programming", "Development"],
+            "interests": ["Open Source", "Coding"],
+            "education": "",
+            "industry": "Technology",
+            "location": data.get('location', ''),
+            "email": data.get('email', ''),
+            "years_experience": 5,
+            "language": "english",
+        }
+    except Exception as e:
+        logger.error(f"Error extracting GitHub profile: {e}")
+        return {"error":200}
+    
 def _extract_profile_data(url: str, platform: SocialMediaPlatform) -> dict:
-    """
-    Extract profile data from URL (mock implementation)
-    In production, this would scrape actual profiles or use APIs
-    """
-
-    # Mock profile data for demonstration
-    mock_profiles = {
-        "john_doe": {
-            "name": "John Doe",
-            "email": "john@techcorp.com",
-            "role": "Senior Product Manager",
-            "company": "TechCorp Inc",
-            "industry": "Technology",
-            "location": "San Francisco, CA",
-            "bio": "Building AI products | Coffee enthusiast | Always learning",
-            "about": "10+ years in product management and startup scaling. Passionate about user-centric design and data-driven decisions.",
-            "skills": ["Product Management", "AI/ML", "Data Analysis", "Team Leadership", "Strategy"],
-            "interests": ["AI", "Startups", "Product Design", "Coffee", "Travel"],
-            "recent_activity": [
-                "Published article on product strategy",
-                "Speaking at tech conference",
-                "Building new AI feature",
-            ],
-            "education": "MIT - Computer Science",
-            "years_experience": 10,
-            "profile_url": url,
-            "language": "english",
-        },
-        "sarah_sharma": {
-            "name": "Sarah Sharma",
-            "email": "sarah@startupxyz.com",
-            "role": "Founder & CEO",
-            "company": "StartupXYZ",
-            "industry": "SaaS",
-            "location": "New York, NY",
-            "bio": "CEO @StartupXYZ | Always down to chat about startups! 🚀",
-            "about": "Founded StartupXYZ to help teams collaborate better. Experienced in fundraising and scaling.",
-            "skills": ["Fundraising", "Business Strategy", "Growth Hacking", "Leadership"],
-            "interests": ["Startups", "Venture Capital", "Entrepreneurship"],
-            "recent_activity": [
-                "Closed Series A funding",
-                "Hired 10 new team members",
-                "Launched new product feature",
-            ],
-            "education": "Stanford - MBA",
-            "years_experience": 8,
-            "profile_url": url,
-            "language": "english",
-        },
-        "alex_kumar": {
-            "name": "Alex Kumar",
-            "email": "alex.kumar@devstudio.com",
-            "role": "Senior Software Engineer",
-            "company": "DevStudio",
-            "industry": "Technology",
-            "location": "Bangalore, India",
-            "bio": "Senior Eng @DevStudio | Python/Go enthusiast | Open source lover",
-            "about": "8+ years building scalable systems. Love clean code and good coffee.",
-            "skills": ["Python", "Go", "Kubernetes", "System Design", "DevOps"],
-            "interests": ["Open Source", "System Design", "Cloud Architecture"],
-            "recent_activity": [
-                "Contributed to major open source project",
-                "Optimized system performance by 40%",
-                "Led architecture redesign",
-            ],
-            "education": "IIT Delhi - Computer Science",
-            "years_experience": 8,
-            "profile_url": url,
-            "language": "english",
-        },
-    }
-
-    # Extract name from URL or use default
-    if "john" in url.lower():
-        return mock_profiles["john_doe"]
-    elif "sarah" in url.lower():
-        return mock_profiles["sarah_sharma"]
-    elif "alex" in url.lower():
-        return mock_profiles["alex_kumar"]
-    else:
-        # Return a random profile based on URL hash
-        profiles_list = list(mock_profiles.values())
-        return profiles_list[hash(url) % len(profiles_list)]
-
+    """Extract real profile data from URL"""
+    import re
+    
+    try:
+        # Handle different URL formats
+        if "linkedin.com" in url or platform == SocialMediaPlatform.LINKEDIN:
+            return _extract_linkedin_profile(url)
+        elif "github.com" in url or platform == SocialMediaPlatform.GITHUB:
+            return _extract_github_profile(url)
+        else:
+            return {"error":200}
+    except Exception as e:
+        logger.error(f"Error extracting profile: {e}")
+        return {"error":200}
+    
 
 # ==================== STATIC FILES ====================
 

@@ -23,9 +23,9 @@ class Settings(BaseSettings):
     WORKERS: int = 1
 
     # Model Configuration
-    MODEL_NAME: str = "microsoft/bitnet-b1.58-2B-4T"  
-    DEVICE: str = "cpu"  # Change to 'cuda' if you have GPU support
-    MAX_TOKENS: int = 2048
+    MODEL_NAME: str = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+    DEVICE: str = "cpu"
+    MAX_TOKENS: int = 512
     TEMPERATURE: float = 0.7
     TOP_P: float = 0.9
 
@@ -56,17 +56,14 @@ class Settings(BaseSettings):
 
     def __init__(self, **data):
         super().__init__(**data)
-        # Create necessary directories
         self.DATA_DIR.mkdir(parents=True, exist_ok=True)
         self.MODELS_DIR.mkdir(parents=True, exist_ok=True)
         self.LOGS_DIR.mkdir(parents=True, exist_ok=True)
         self.STORAGE_PATH.mkdir(parents=True, exist_ok=True)
 
-        # Set cache directory
         if self.CACHE_DIR is None:
             self.CACHE_DIR = self.MODELS_DIR / ".cache"
             self.CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 
-# Create a global settings instance
 settings = Settings()
